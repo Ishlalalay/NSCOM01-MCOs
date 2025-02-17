@@ -23,17 +23,10 @@ def handle_error(message):
 # Option negotiation
 def negotiate_options(sock, server_ip, block_size):
     # Implement the logic for additional option negotiation
-    pass
 
-def negotiate_block_size(server_ip, TFTP_PORT, requested_block_size):
-    # Create a UDP socket
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
-    # Prepare the request message for block size negotiation
-    message = f"NEGO blksize {requested_block_size}".encode('ascii')
-
-    # Send the message to the server
-    sock.sendto(message, (server_ip, TFTP_PORT))
+    #block size nego
+    message = f"NEGO blksize {block_size}".encode('ascii') # prep message to server
+    sock.sendto(message, (server_ip, TFTP_PORT)) # send the created message to the server
 
     # Receive the response from the server
     response, server_address = sock.recvfrom(4096)
@@ -46,7 +39,6 @@ def negotiate_block_size(server_ip, TFTP_PORT, requested_block_size):
     else:
         print("Failed to negotiate block size.")
         return None
-
 
 # Functions for packet creation
 def create_upload_request_packet(opcode, filename, mode='octet', block_size=None):
@@ -67,7 +59,7 @@ def create_download_request_packet(opcode, filename, mode='octet', block_size=No
     packet += mode.encode('ascii') + b'\0'  # mode (string, null-terminated)
 
     # Add option negotiation (blksize, tsize)
-    negotiate_block_size("127.0.0.1", TFTP_PORT, block_size)
+    block_size = negotiate_options(sock, TFTP_PORT, block_size)
     if block_size:
         packet += b'blksize' + b'\0' + str(block_size).encode('ascii') + b'\0'
 
