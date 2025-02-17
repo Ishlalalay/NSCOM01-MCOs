@@ -1,14 +1,6 @@
 import sys
 from tftp_funcs import upload_file, download_file
 
-def check_blksize(block_size):
-    if block_size >= 512 and block_size <= 8192:
-        print("Block size accepted")
-        return block_size
-    else:
-        print("block size not accpeted. Reverting to default.")
-        return 512
-
 ###### Main Program
 def main():
     server_ip = "0.0.0.0"
@@ -29,7 +21,6 @@ def main():
             file_to_upload = input("Enter the path of the file to upload: ")
             remote_filename = input("Enter the filename to use on the server: ")
             block_size = int(input("Enter block size for upload (default 512): "))
-            block_size = check_blksize(block_size)
             upload_file(server_ip, file_to_upload, remote_filename, block_size)
 
         elif action == "2":
@@ -37,7 +28,6 @@ def main():
             remote_filename = input("Enter the filename to download: ")
             local_filename = input("Enter the local filename to save the downloaded file: ")
             block_size = int(input("Enter block size for download (default 512): "))
-            block_size = check_blksize(block_size)
             download_file(server_ip, remote_filename, local_filename, block_size)
 
         elif action == "3":
