@@ -22,7 +22,7 @@ def main():
             if not check_local_file_exists(file_to_upload):
                 continue # Skip to the next iteration
             remote_filename = input("Enter the filename to use on the server: ")
-            block_size = int(input("Enter block size for upload (default 512): ") or 512)
+            block_size = int(input("Enter block size for upload (default 512 bytes): ") or 512)
             upload_file(server_ip, file_to_upload, remote_filename, block_size)
             continue
 
@@ -30,7 +30,7 @@ def main():
             # Retrieve file from server
             remote_filename = input("Enter the filename to download: ")
             local_filename = input("Enter the local filename to save the downloaded file: ")
-            block_size = int(input("Enter block size for download (default 512): ") or 512)
+            block_size = int(input("Enter block size for download (default 512 bytes): ") or 512)
             download_file(server_ip, remote_filename, local_filename, block_size)
 
         elif action == "3":

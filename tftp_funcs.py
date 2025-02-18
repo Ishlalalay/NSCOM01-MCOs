@@ -154,6 +154,7 @@ def upload_file(server_ip, file_path, remote_filename, block_size=BLOCK_SIZE):
                 return
             
             block_number += 1
+            print("Acknowledged: Block number #", ack_block_num)
     
     print(f"File {remote_filename} uploaded successfully.\n")
     sock.close()
@@ -170,7 +171,7 @@ def download_file(server_ip, remote_filename, local_filename, block_size=BLOCK_S
     (packet, (host, port)) = receive_packet(sock)
     if packet is None:
         return
-    #print("paker", packet, host, port)
+
     new_server_ip = host
     new_TFTP_PORT = port
     if not packet:
@@ -179,42 +180,39 @@ def download_file(server_ip, remote_filename, local_filename, block_size=BLOCK_S
         return
     #print(packet)
 
-    opcode, block_num = struct.unpack('!HH', packet[:4])
-    #print(opcode, block_num)
+    opcode, blksize = struct.unpack('!HH', packet[:4])
     if opcode == OPCODE_ERROR:
-        # kukunin ko kung anong klaseng error ba -> sa packaet mo makikita ang error code
         error_code = struct.unpack('!H', packet[2:4])[0]
         handle_error("Error in RRQ response.", error_code)
         sock.close()
         return
-    #print(packet[0], packet[1], packet[2], packet[3], packet[4])
     
     ack_packet = struct.pack('!HH', OPCODE_ACK, 0)
     send_packet(sock, ack_packet, new_server_ip, new_TFTP_PORT)
 
     with open(local_filename, 'wb') as file:
         print("Start receiving data...")
-        block_number = 1
         while True:
             (packet, (host, port)) = receive_packet(sock)
             if host != server_ip:
                 continue
 
-            num_recv, data = struct.unpack('!H', packet[2:4])[0], packet[4:]
-            #print(data)
+            num_recv = struct.unpack('!H', packet[2:4])[0]
+            data = packet[4:]
+            opcode, block_num = struct.unpack('!HH', packet[:4])
+
             if opcode == OPCODE_ERROR:
                 error_code = struct.unpack('!H', packet[2:4])[0]
                 handle_error("Error in data block.", error_code)
                 return
 
             if num_recv > 0:
-                #print("dumping data {}", data)
                 file.write(data)
 
                 # Send acknowledgment (ACK)
-                ack_packet = struct.pack('!HH', OPCODE_ACK, block_number)
+                ack_packet = struct.pack('!HH', OPCODE_ACK, block_num)
                 send_packet(sock, ack_packet, new_server_ip, new_TFTP_PORT)
-                block_number += 1
+                print("Sent: ACK Block number #", block_num)
 
             if len(data) < block_size:
                 break  # End of file
