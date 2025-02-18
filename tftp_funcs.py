@@ -32,27 +32,6 @@ def handle_error(message, error_code):
     print(f"Error: {message}")
     print(f"Error code {hex(error_code)}: {error_message}")
 
-# Option negotiation
-def negotiate_options(sock, server_ip, block_size):
-    # Implement the logic for additional option negotiation
-
-    '''
-    message = f"NEGO blksize {block_size}".encode('ascii') # prep message to server
-    sock.sendto(message, (server_ip, TFTP_PORT)) # send the created message to the server
-
-    # Receive the response from the server
-    response, server_address = sock.recvfrom(4096)
-    print(f"Server responded: {response.decode('ascii')}")
-
-    # Parse and return the negotiated block size
-    if response.decode('ascii').startswith("OK blksize"):
-        _, _, block_size = response.decode('ascii').split()
-        return int(block_size)
-    else:
-        print("Failed to negotiate block size.")
-        return None
-    '''
-
 # Functions for packet creation
 def create_upload_request_packet(opcode, filename, file_path, mode='octet', block_size=None):
     packet = struct.pack('!H', opcode)  # opcode (2 bytes)
@@ -63,6 +42,9 @@ def create_upload_request_packet(opcode, filename, file_path, mode='octet', bloc
     if block_size:
         packet += b'blksize' + b'\0' + str(block_size).encode('ascii') + b'\0'
         packet += b'tsize' + b'\0' + str(os.path.getsize(file_path)).encode('ascii') + b'\0'
+    if file_path:
+        file_size = os.path.getsize(file_path)
+        packet += b'tsize' + b'\0' + str(file_size).encode('ascii') + b'\0'
 
     return packet
 
@@ -111,7 +93,7 @@ def upload_file(server_ip, file_path, remote_filename, block_size=BLOCK_SIZE):
     new_server_ip = host
     new_TFTP_PORT = port
     if not packet:
-        handle_error("Timeout waiting for OACK.")
+        print("Timeout waiting for OACK.")
         sock.close()
         return
 
@@ -136,10 +118,9 @@ def upload_file(server_ip, file_path, remote_filename, block_size=BLOCK_SIZE):
             # Wait for acknowledgment (ACK)
             (ack_packet, (host, port)) = receive_packet(sock)
             if not ack_packet:
-                handle_error("Timeout waiting for ACK.")
+                print("Timeout waiting for ACK.")
                 sock.close()
                 return
-            #print(ack_packet)
             
             ack_opcode, ack_block_num = struct.unpack('!HH', ack_packet)
 
@@ -175,7 +156,7 @@ def download_file(server_ip, remote_filename, local_filename, block_size=BLOCK_S
     new_server_ip = host
     new_TFTP_PORT = port
     if not packet:
-        handle_error("Timeout waiting for OACK.")
+        print("Timeout waiting for OACK.")
         sock.close()
         return
     #print(packet)
