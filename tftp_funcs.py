@@ -84,6 +84,21 @@ def receive_packet(sock):
         print(f"An unexpected error occurred: {e}\n")
         return (None, (None, None))
 
+# FUNCTION: Specifically used for checking for duplicate acknowledgement packet in uploading process. Removed timeout error message
+def receive_packet_ack(sock):
+    try:                                             ## Try-catch execution of reeceiving a packet
+        sock.settimeout(TIMEOUT)
+        (packet, (host, port)) = sock.recvfrom(516)  # max TFTP packet size (512 data + 4 header bytes)
+        return (packet, (host, port))
+    except socket.timeout:                           # Check timeout
+        return (None, (None, None))
+    except ConnectionResetError:                     # Exception: Disconnected from the server
+        print("Error: The connection was forcibly closed by the server.\n")
+        return (None, (None, None))
+    except Exception as e:                           # Exception: Other
+        print(f"An unexpected error occurred: {e}\n")
+        return (None, (None, None))
+
 # MAIN FUNCTION: Upload File Function - Handles the user's WRQ
 def upload_file(server_ip, file_path, remote_filename, block_size=BLOCK_SIZE):
     # Creates a socket
@@ -117,13 +132,13 @@ def upload_file(server_ip, file_path, remote_filename, block_size=BLOCK_SIZE):
             # Begin by reading data packet
             data = file.read(block_size)
             if not data:                                                            # If data is not received
-                (ack_packet, (host, port)) = receive_packet(sock)
+                (ack_packet, (host, port)) = receive_packet_ack(sock)
                 if ack_packet:                                                      # Check if a double acknowledgement was received
                     ack_opcode, ack_block_num = struct.unpack('!HH', ack_packet)
                     if last_received_ack == ack_block_num:                          # Condition runs if most recent acknowledgement is equal to previous received acknowledgement
                         print("Duplicate ACK detected.")
                         sock.close()                                                # Displays error of double acknowledgement, closes socket and ends process
-                        return 
+                        return
                 else: 
                     break                                                           # Marks end of file and stops loop
 
