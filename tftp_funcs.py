@@ -116,16 +116,18 @@ def upload_file(server_ip, file_path, remote_filename, block_size=BLOCK_SIZE):
         while True:                                                                 # Continue looping until a condition to stop occurs
             # Begin by reading data packet
             data = file.read(block_size)
-            if not data:                                                            # If data is not received
+            if len(data) < block_size:                                                                # If no EOF
+                data_packet = struct.pack('!HH', OPCODE_DATA, block_number) + data      # Prepares data packet for sending
+                send_packet(sock, data_packet, new_server_ip, new_TFTP_PORT)            # Send data packet to desired server
                 (ack_packet, (host, port)) = receive_packet(sock)
-                if ack_packet:                                                      # Check if a double acknowledgement was received
-                    ack_opcode, ack_block_num = struct.unpack('!HH', ack_packet)
-                    if last_received_ack == ack_block_num:                          # Condition runs if most recent acknowledgement is equal to previous received acknowledgement
-                        print("Duplicate ACK detected.")
-                        sock.close()                                                # Displays error of double acknowledgement, closes socket and ends process
-                        return 
-                else: 
-                    break                                                           # Marks end of file and stops loop
+                ack_opcode, ack_block_num = struct.unpack('!HH', ack_packet)            # Unpack acknowledgement packet for opcode and block number
+                if ack_opcode == OPCODE_ERROR:                                          # Checks opcode for error
+                    handle_error("Error in ACK response.")
+                    sock.close()                                                        # Handle error, close socket, end process if acknowledgement opcode indicates error
+                    return
+                print("Acknowledged: Block number #", ack_block_num)                    # Displays tracked block number of acknowledgement
+                sock.close()
+                break
 
             data_packet = struct.pack('!HH', OPCODE_DATA, block_number) + data      # Prepares data packet for sending
             send_packet(sock, data_packet, new_server_ip, new_TFTP_PORT)            # Send data packet to desired server
