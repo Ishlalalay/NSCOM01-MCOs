@@ -1,3 +1,4 @@
+from platform import node
 import socket
 import struct
 import os
@@ -107,11 +108,22 @@ def upload_file(server_ip, file_path, remote_filename, block_size=BLOCK_SIZE):
     # Start sending data blocks
     with open(file_path, 'rb') as file:
         block_number = 1
+        last_received_ack = None
         while True:
             data = file.read(block_size)
             if not data:
-                break  # End of file
-            #print(data)
+                (ack_packet, (host, port)) = receive_packet(sock)
+                if ack_packet:            
+                    ack_opcode, ack_block_num = struct.unpack('!HH', ack_packet)
+                    if last_received_ack == ack_block_num:
+                        print("Duplicate ACK detected.")
+                        sock.close()
+                        return
+                    else:
+                        last_received_ack = ack_block_num
+                else: 
+                    break  # End of file
+            # print(data)
             data_packet = struct.pack('!HH', OPCODE_DATA, block_number) + data
             send_packet(sock, data_packet, new_server_ip, new_TFTP_PORT)
             
@@ -128,12 +140,14 @@ def upload_file(server_ip, file_path, remote_filename, block_size=BLOCK_SIZE):
                 handle_error("Error in ACK response.")
                 sock.close()
                 return
-
-            if ack_block_num != block_number:
+            
+            if last_received_ack == ack_block_num:
                 handle_error("Duplicate ACK detected.")
                 sock.close()
                 return
-            
+            else:
+                last_received_ack = ack_block_num
+
             block_number += 1
             print("Acknowledged: Block number #", ack_block_num)
     
