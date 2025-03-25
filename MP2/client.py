@@ -158,7 +158,7 @@ class client:
         #-------------
 
         # Increment the sequence number
-        self.rtspSeq += 1
+        # self.rtspSeq += 1                             // removed this to avoid doubel increment
     
         # Define the request header
         request = ""
