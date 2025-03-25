@@ -1,0 +1,25 @@
+import binascii
+
+# Hexadecimal string
+hex_string = '7800630f3def1ccd382d487204c94ff29e058820a95230fa89f542abad463ed9'
+
+# Convert the hexadecimal string to raw bytes
+byte_data = binascii.unhexlify(hex_string)
+
+# Print the byte data
+print("Byte data:", byte_data)
+
+# If you'd like to see the decoded bytes as a string (if it's printable), do the following:
+try:
+    decoded_string = byte_data.decode('utf-8')
+    print("Decoded string (if readable):", decoded_string)
+except UnicodeDecodeError:
+    print("The decoded byte data is not a readable UTF-8 string.")
+
+import base64
+
+try:
+    decoded_base64 = base64.b64decode(byte_data)
+    print("Base64 decoded data:", decoded_base64)
+except Exception as e:
+    print("Error while decoding base64:", e)

@@ -5,6 +5,15 @@ import socket, threading, sys, traceback, os
 import pyaudio
 
 from rtp_packet import rtp_packet
+import psutil
+
+try:
+    p = psutil.Process()
+    p.nice(psutil.REALTIME_PRIORITY_CLASS)  # Set process to high priority
+    #print("Process priority set to REALTIME.")
+except Exception as e:
+    print(f"Could not set process priority: {e}")
+
 
 CACHE_FILE_NAME = "cache-"
 CACHE_FILE_EXT = ".jpg"
@@ -98,20 +107,21 @@ class client:
         """Listen for RTP packets (now handles audio payloads)."""
         # Set up audio playback
         p = pyaudio.PyAudio()
-        stream = p.open(format=pyaudio.paInt16, channels=1, rate=8000, output=True)
+        #stream = p.open(format=pyaudio.paInt16, channels=1, rate=8000, output=True)
+        stream = p.open(format=pyaudio.paInt16, channels=1, rate=8000, output=True, frames_per_buffer=320)
 
         while True:
             try:
                 data = self.rtpSocket.recv(20480)
                 if data:
-                    rtpPacket = RtpPacket()
+                    rtpPacket = rtp_packet()
                     rtpPacket.decode(data)
 
                     currFrameNbr = rtpPacket.seqNum()
                     print("Current Seq Num: " + str(currFrameNbr))
 
                     # Only process packets with a higher sequence number
-                    if currFrameNbr > self.frameNbr:
+                    if currFrameNbr >= self.frameNbr:
                         self.frameNbr = currFrameNbr
                         audio_payload = rtpPacket.getPayload()
                         stream.write(audio_payload)  # Play audio directly
@@ -258,9 +268,7 @@ class client:
     
     def openRtpPort(self):
         """ RTP socket binded to a specified port."""
-        #-------------
-        # TO COMPLETE
-        #-------------
+
         # Create a new datagram socket to receive RTP packets from the server
         self.rtpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         

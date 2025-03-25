@@ -5,7 +5,7 @@ NSCOM01 S13 Machine Project 2
 **Instructions for compiling and running the program:**
 Commands to run
 Server: python server.py 8554
-Client: python client_launcher.py 127.0.0.1 8554 5004 arcane.wav
+Client: python client_launcher.py 127.0.0.1 8554 5004 arcane.wav / python client_launcher.py 127.0.0.1 8554 5004 call.wav
 
 **Implemented features and error-handling mechanisms:**
 
